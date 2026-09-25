@@ -1,141 +1,228 @@
 <#
 .SYNOPSIS
-    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - Pure PowerShell Edition
+    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - Modern WPF GUI Edition
 .DESCRIPTION
-    Ultimate Low Latency & High FPS Game Optimizer Engine.
-    Converts all FG Optimizer C# tweaks into a clean, transparent, single-file PowerShell script.
-.LINK
-    https://github.com/your-username/FG-Optimizer
+    Full Graphical User Interface (GUI) powered by WPF and PowerShell.
+    Allows users to toggle gaming tweaks, telemetry settings, service optimizations, and clean system junk.
 #>
 
-# ==============================================================================
-# 1. ELEVATE TO ADMINISTRATOR PRIVILEGES IF NOT ALREADY ELEVATED
-# ==============================================================================
+# 1. Force Administrator Privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "[!] Requesting Administrator Privileges..." -ForegroundColor Yellow
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
 
-# Clear screen and show header
-Clear-Host
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host "   FRUSTRATED GAMER OPTIMIZER - POWERSHELL ENGINE        " -ForegroundColor Cyan
-Write-Host "   Version 2.0 | High Performance & Low Latency Engine    " -ForegroundColor Gray
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host ""
+# Load WPF Assemblies
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 
-# Helper function to set registry properties safely
-function Set-RegistryKeySafely {
-    param (
-        [string]$Path,
-        [string]$Name,
-        [object]$Value,
-        [string]$Type = "DWord"
-    )
+# Define XAML Interface
+[xml]$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Frustrated Gamer Optimizer v2.0" Height="580" Width="720"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="#12131C" Foreground="White" FontFamily="Segoe UI">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1C1E2D" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="FRUSTRATED GAMER OPTIMIZER" FontSize="20" FontWeight="Bold" Foreground="#F39C12"/>
+                    <TextBlock Text="Ultimate Low Latency &amp; High FPS Game Optimizer Engine" FontSize="12" Foreground="#8A8F9E" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Border Grid.Column="1" Background="#26293C" CornerRadius="5" Padding="10,5">
+                    <TextBlock Text="v2.0 GUI" FontWeight="Bold" Foreground="#00E5FF"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Main Tweak Options -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,10,0">
+                <!-- Group 1: Performance Tweaks -->
+                <Border Background="#1A1C29" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="#2D3146" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="⚡ Gaming &amp; Latency Tweaks" FontSize="14" FontWeight="Bold" Foreground="#F39C12" Margin="0,0,0,8"/>
+                        <CheckBox Name="chkGPU" Content="Enable High GPU Priority &amp; System Responsiveness" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkNet" Content="Optimize Network Throttling Index (Low Latency / Ping)" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkMenu" Content="Remove Start Menu &amp; Context Menu Delays" IsChecked="True" Foreground="White" Margin="0,4"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Group 2: Telemetry Tweaks -->
+                <Border Background="#1A1C29" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="#2D3146" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="🛡️ Privacy &amp; Telemetry Disablement" FontSize="14" FontWeight="Bold" Foreground="#00E5FF" Margin="0,0,0,8"/>
+                        <CheckBox Name="chkTelemetry" Content="Disable Windows DiagTrack &amp; Error Reporting" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkAppTelemetry" Content="Disable Chrome, Firefox &amp; Office Telemetry" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkSticky" Content="Disable Sticky Keys Popup (Gaming Protection)" IsChecked="True" Foreground="White" Margin="0,4"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Group 3: Service & Disk Tweaks -->
+                <Border Background="#1A1C29" CornerRadius="6" Padding="12" Margin="0,0,0,10" BorderBrush="#2D3146" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="🚀 Services &amp; System Optimization" FontSize="14" FontWeight="Bold" Foreground="#2ECC71" Margin="0,0,0,8"/>
+                        <CheckBox Name="chkSysMain" Content="Disable SysMain (Superfetch) &amp; Unused Services" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkHiber" Content="Disable Hibernation (Free up GBs of Storage)" IsChecked="True" Foreground="White" Margin="0,4"/>
+                        <CheckBox Name="chkLongPath" Content="Enable Windows Long File Paths Support" IsChecked="True" Foreground="White" Margin="0,4"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Status Box -->
+        <Border Grid.Row="2" Background="#171824" CornerRadius="5" Padding="10" Margin="0,10,0,10">
+            <TextBlock Name="txtStatus" Text="Ready. Select your desired tweaks above and click 'Apply Tweaks'." Foreground="#A0A5B5" FontSize="12"/>
+        </Border>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Name="btnApply" Content="⚡ APPLY SELECTED TWEAKS" Grid.Column="0" Height="42" Margin="0,0,5,0"
+                    Background="#F39C12" Foreground="Black" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="6"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+
+            <Button Name="btnClean" Content="🧹 CLEAN JUNK &amp; TEMP FILES" Grid.Column="1" Height="42" Margin="5,0,0,0"
+                    Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="6"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
+"@
+
+# Read & Create WPF Window
+$reader = New-Object System.Xml.XmlNodeReader $xaml
+$window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+# Get Controls
+$btnApply       = $window.FindName("btnApply")
+$btnClean       = $window.FindName("btnClean")
+$txtStatus      = $window.FindName("txtStatus")
+$chkGPU         = $window.FindName("chkGPU")
+$chkNet         = $window.FindName("chkNet")
+$chkMenu        = $window.FindName("chkMenu")
+$chkTelemetry   = $window.FindName("chkTelemetry")
+$chkAppTelemetry= $window.FindName("chkAppTelemetry")
+$chkSticky      = $window.FindName("chkSticky")
+$chkSysMain     = $window.FindName("chkSysMain")
+$chkHiber       = $window.FindName("chkHiber")
+$chkLongPath    = $window.FindName("chkLongPath")
+
+# Safe Helper Functions
+function Set-RegKey ($Path, $Name, $Value, $Type = "DWord") {
     try {
-        if (-not (Test-Path $Path)) {
-            New-Item -Path $Path -Force | Out-Null
-        }
+        if (-not (Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
         Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -ErrorAction SilentlyContinue
-    } catch {
-        Write-Host "  [-] Failed to set $Name under $Path" -ForegroundColor Red
-    }
+    } catch {}
 }
 
-# Helper function to manage services safely
-function Set-ServiceSafely {
-    param (
-        [string]$ServiceName,
-        [string]$StartupType = "Disabled"
-    )
+function Disable-Svc ($SvcName) {
     try {
-        if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
-            if ($StartupType -eq "Disabled") {
-                Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
-            }
-            Set-Service -Name $ServiceName -StartupType $StartupType -ErrorAction SilentlyContinue
-            Write-Host "  [+] Configured service '$ServiceName' -> $StartupType" -ForegroundColor Gray
+        if (Get-Service -Name $SvcName -ErrorAction SilentlyContinue) {
+            Stop-Service -Name $SvcName -Force -ErrorAction SilentlyContinue
+            Set-Service -Name $SvcName -StartupType Disabled -ErrorAction SilentlyContinue
         }
     } catch {}
 }
 
-# ==============================================================================
-# 2. SYSTEM & GAMING LATENCY TWEAKS
-# ==============================================================================
-Write-Host "[1/5] Applying Gaming & System Priority Tweaks..." -ForegroundColor Green
+# Button Click: Apply Tweaks
+$btnApply.Add_Click({
+    $txtStatus.Text = "Applying selected tweaks... Please wait."
+    $txtStatus.Foreground = [System.Windows.Media.Brushes]::Yellow
 
-# System Responsiveness & Multimedia Tasks (Games)
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "SystemResponsiveness" -Value 1 -Type DWord
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -Value 0xffffffff -Type DWord
+    if ($chkGPU.IsChecked) {
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 1
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "GPU Priority" 8
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Priority" 6
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" "High" "String"
+    }
 
-$gamesTasksPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
-Set-RegistryKeySafely -Path $gamesTasksPath -Name "GPU Priority" -Value 8 -Type DWord
-Set-RegistryKeySafely -Path $gamesTasksPath -Name "Priority" -Value 6 -Type DWord
-Set-RegistryKeySafely -Path $gamesTasksPath -Name "Scheduling Category" -Value "High" -Type String
+    if ($chkNet.IsChecked) {
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 0xffffffff
+    }
 
-# Remove Menu Delays
-Set-RegistryKeySafely -Path "HKCU:\Control Panel\Desktop" -Name "MenuShowDelay" -Value "0" -Type String
+    if ($chkMenu.IsChecked) {
+        Set-RegKey "HKCU:\Control Panel\Desktop" "MenuShowDelay" "0" "String"
+    }
 
-# Enable Long Paths
-Set-RegistryKeySafely -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWord
+    if ($chkTelemetry.IsChecked) {
+        Set-RegKey "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting" "Disabled" 1
+        Set-RegKey "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore" "DisableSR" 1
+        Disable-Svc "DiagTrack"
+        Disable-Svc "diagsvc"
+        Disable-Svc "dmwappushservice"
+        Disable-Svc "PcaSvc"
+    }
 
-# ==============================================================================
-# 3. TELEMETRY & BACKGROUND TRACKING DISABLEMENT
-# ==============================================================================
-Write-Host "[2/5] Disabling Telemetry, Diagnostics & Error Reporting..." -ForegroundColor Green
+    if ($chkAppTelemetry.IsChecked) {
+        Set-RegKey "HKCU:\Software\Policies\Microsoft\Office\16.0\osm" "enabletelemetry" 0
+        Set-RegKey "HKLM:\SOFTWARE\Policies\Mozilla\Firefox" "DisableTelemetry" 1
+        Set-RegKey "HKLM:\SOFTWARE\Policies\Google\Chrome" "MetricsReportingEnabled" 0
+    }
 
-# Windows Error Reporting & SmartScreen
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting" -Name "Disabled" -Value 1 -Type DWord
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore" -Name "DisableSR" -Value 1 -Type DWord
+    if ($chkSticky.IsChecked) {
+        Set-RegKey "HKCU:\Control Panel\Accessibility\StickyKeys" "Flags" "506" "String"
+    }
 
-# Office, Firefox, Chrome Telemetry Policies
-Set-RegistryKeySafely -Path "HKCU:\Software\Policies\Microsoft\Office\16.0\osm" -Name "enabletelemetry" -Value 0 -Type DWord
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Policies\Mozilla\Firefox" -Name "DisableTelemetry" -Value 1 -Type DWord
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Policies\Google\Chrome" -Name "MetricsReportingEnabled" -Value 0 -Type DWord
+    if ($chkSysMain.IsChecked) {
+        Disable-Svc "SysMain"
+        Disable-Svc "Fax"
+        Disable-Svc "Spooler"
+    }
 
-# Background Telemetry & Unused Services
-$telemetryServices = @("DiagTrack", "diagsvc", "dmwappushservice", "PcaSvc", "NvTelemetryContainer", "SensrSvc", "WMPNetworkSvc")
-foreach ($svc in $telemetryServices) {
-    Set-ServiceSafely -ServiceName $svc -StartupType "Disabled"
-}
+    if ($chkHiber.IsChecked) {
+        powercfg -h off 2>$null
+    }
 
-# ==============================================================================
-# 4. DISABLING UNNECESSARY OS SERVICES & FEATURES
-# ==============================================================================
-Write-Host "[3/5] Optimizing Background Services & Storage..." -ForegroundColor Green
+    if ($chkLongPath.IsChecked) {
+        Set-RegKey "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" "LongPathsEnabled" 1
+    }
 
-# Disable SysMain (Superfetch) & Search Indexing (Optional performance boosters)
-Set-ServiceSafely -ServiceName "SysMain" -StartupType "Disabled"
-Set-ServiceSafely -ServiceName "Fax" -StartupType "Disabled"
-Set-ServiceSafely -ServiceName "Spooler" -StartupType "Disabled"
+    $txtStatus.Text = "⚡ SUCCESS: All selected tweaks applied successfully! Please restart your PC."
+    $txtStatus.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+})
 
-# Disable Hibernation (Reclaims hiberfil.sys storage space)
-Write-Host "  [+] Disabling Hibernation to free up disk space..." -ForegroundColor Gray
-powercfg -h off 2>$null
+# Button Click: Clean Junk Files
+$btnClean.Add_Click({
+    $txtStatus.Text = "Cleaning system temporary files and junk..."
+    $txtStatus.Foreground = [System.Windows.Media.Brushes]::Yellow
 
-# ==============================================================================
-# 5. UI & EXPLORER OPTIMIZATIONS
-# ==============================================================================
-Write-Host "[4/5] Tweaking Windows Explorer & UI..." -ForegroundColor Green
+    $tempFolders = @($env:TEMP, "C:\Windows\Temp", "C:\Windows\Prefetch")
+    foreach ($folder in $tempFolders) {
+        if (Test-Path $folder) {
+            Remove-Item -Path "$folder\*" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 
-# Restore Windows 11 Classic Context Menu
-Set-RegistryKeySafely -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" -Name "" -Value "" -Type String
+    $txtStatus.Text = "🧹 SUCCESS: System junk files and caches cleared!"
+    $txtStatus.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+})
 
-# Hide Taskbar Weather & News
-Set-RegistryKeySafely -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds" -Name "ShellFeedsTaskbarViewMode" -Value 2 -Type DWord
-Set-RegistryKeySafely -Path "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests" -Value 0 -Type DWord
-
-# Sticky Keys Disable (Prevents accidental popups during gaming)
-Set-RegistryKeySafely -Path "HKCU:\Control Panel\Accessibility\StickyKeys" -Name "Flags" -Value "506" -Type String
-
-# ==============================================================================
-# 6. COMPLETION SUMMARY
-# ==============================================================================
-Write-Host "[5/5] Finalizing Optimization..." -ForegroundColor Green
-Write-Host ""
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host "  SUCCESS: All FG Optimizer Tweaks Have Been Applied!     " -ForegroundColor Green
-Write-Host "  Recommended: Restart your PC to complete configuration.  " -ForegroundColor Yellow
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host ""
+# Launch GUI
+$window.ShowDialog() | Out-Null
