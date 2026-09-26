@@ -1,42 +1,42 @@
 <#
 .SYNOPSIS
-    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - In-Memory Assembly Loader
+    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - Full Original C# GUI Launcher
 .DESCRIPTION
-    Loads the compiled FG_Optimizer.dll directly into PowerShell memory from GitHub
-    and launches your exact C# GUI application with hardware monitoring & dashboard UI.
+    Downloads the compiled FG_Optimizer.dll directly into memory with cache-busting
+    and launches your exact original C# GUI application (with gauges, sidebar & HWID info).
 #>
 
-# 1. Force Administrator Privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
 
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host "   FRUSTRATED GAMER OPTIMIZER - IN-MEMORY LAUNCHER       " -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor DarkYellow
-Write-Host "[*] Fetching FG Optimizer Engine from GitHub..." -ForegroundColor Yellow
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-# GitHub Direct Download URL for the DLL
-$dllUrl = "https://raw.githubusercontent.com/klrkofficialshop/dogingontop/main/FG_Optimizer.dll"
+# Cache buster to bypass GitHub CDN cache
+$v = Get-Random
+$dllUrl = "https://raw.githubusercontent.com/klrkofficialshop/dogingontop/main/FG_Optimizer.dll?v=$v"
+
+Write-Host "==========================================================" -ForegroundColor DarkYellow
+Write-Host "   FRUSTRATED GAMER OPTIMIZER - LOADING FULL C# ENGINE    " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor DarkYellow
+Write-Host "[*] Downloading FG_Optimizer.dll into memory..." -ForegroundColor Yellow
 
 try {
-    # Download DLL bytes straight into memory
     $webClient = New-Object System.Net.WebClient
+    $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
+    $webClient.Headers.Add("Cache-Control", "no-cache")
     $dllBytes = $webClient.DownloadData($dllUrl)
 
-    Write-Host "[+] Assembly downloaded successfully. Loading into memory..." -ForegroundColor Green
+    Write-Host "[+] Loaded $([Math]::Round($dllBytes.Length / 1KB, 2)) KB into memory. Starting GUI..." -ForegroundColor Green
 
-    # Load assembly dynamically in PowerShell memory space
+    # Load assembly dynamically in PowerShell process memory
     $assembly = [System.Reflection.Assembly]::Load($dllBytes)
 
-    Write-Host "[+] Launching Frustrated Gamer Optimizer GUI..." -ForegroundColor Green
-    
-    # Enable Visual Styles & Execute Program.Main()
     [System.Windows.Forms.Application]::EnableVisualStyles()
     [FG_Optimizer.Program]::Main()
 
 } catch {
-    Write-Host "[-] Failed to load FG Optimizer: $_" -ForegroundColor Red
+    Write-Host "[-] Error launching FG Optimizer GUI: $_" -ForegroundColor Red
     Pause
 }
