@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - Full Original C# GUI Launcher
+    FRUSTRATED GAMER OPTIMIZER (FGOptimizer) - In-Memory Assembly Loader
 .DESCRIPTION
-    Downloads the compiled FG_Optimizer.dll directly into memory with cache-busting
-    and launches your exact original C# GUI application (with gauges, sidebar & HWID info).
+    Loads the compiled FG_Optimizer.dll directly into PowerShell memory from GitHub
+    and launches your exact C# GUI application using Reflection.
 #>
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -13,7 +13,6 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-# Cache buster to bypass GitHub CDN cache
 $v = Get-Random
 $dllUrl = "https://raw.githubusercontent.com/klrkofficialshop/dogingontop/main/FG_Optimizer.dll?v=$v"
 
@@ -33,8 +32,16 @@ try {
     # Load assembly dynamically in PowerShell process memory
     $assembly = [System.Reflection.Assembly]::Load($dllBytes)
 
+    # Locate EntryPoint dynamically
+    $programType = $assembly.GetType("FG_Optimizer.Program")
+    if ($null -eq $programType) {
+        $programType = ($assembly.GetTypes() | Where-Object { $_.Name -eq "Program" })[0]
+    }
+
+    $mainMethod = $programType.GetMethod("Main", [System.Reflection.BindingFlags]"Static, Public, NonPublic")
+
     [System.Windows.Forms.Application]::EnableVisualStyles()
-    [FG_Optimizer.Program]::Main()
+    $mainMethod.Invoke($null, $null)
 
 } catch {
     Write-Host "[-] Error launching FG Optimizer GUI: $_" -ForegroundColor Red
